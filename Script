@@ -1,0 +1,89 @@
+function onEdit(e){
+  horodatage(e);
+}
+
+function horodatage(e){
+  //récupération du nom du doc actif
+  var sheet = e.source.getActiveSheet();
+  //récupération du nom de la page active
+  var nom = sheet.getName();
+  //récupération de la position
+  var range = e.range;
+  ///séparation de la position en ligne et colonne
+  var row = range.getRow();
+  var col = range.getColumn();
+  //si la case éditée n'est pas vide et la case éditée est dans la colonne A et le nom du doc est Intérimaire, implantation de la date sur la position newRange
+  if(range.getValue() != "" && col == 3 && (nom == "Vente Billes" || nom == "Vente Jericans")){
+    //selection de la position de la date (colonne 6) en tant que newRange
+    var newRange = sheet.getRange(row,2);
+    newRange.setValue(new Date());
+  }
+}
+
+
+function saveBtn() {
+  let spreadsheet = SpreadsheetApp.getActive();
+  class Interim{    
+    constructor(name,numero,role){
+    this.name = name;
+    this.numero = numero;
+    this.role = role;
+    }
+  }
+  let interimPage = spreadsheet.getSheetByName('Client');
+  function createInterim(interimRecord){
+  interimPage.appendRow([
+    interimRecord.name,
+    interimRecord.numero,
+    interimRecord.role]);
+  }
+  let formNameRange = spreadsheet.getRangeByName('name');
+  let formNumeroRange = spreadsheet.getRangeByName('numero');
+  let formRoleRange = spreadsheet.getRangeByName('role');
+  let interim = new Interim(
+    formNameRange.getValue(),
+    formNumeroRange.getValue(),
+    formRoleRange.getValue()
+  )
+  const interimList = interimPage.getDataRange().getValues(); 
+  let verifinterim = interimList.filter(data => {return data[0] == formNameRange.getValue()})[0];
+  if(formNameRange.getValue() != "" && formNumeroRange.getValue() != "" && formRoleRange.getValue() != ""){
+    if(verifinterim){
+      SpreadsheetApp.getUi().alert(formNameRange.getValue()+' est déjà enregistré!');    
+    } else {
+      createInterim(interim);
+      interimPage.getRange('D2:E2').autoFill(interimPage.getRange('D2:E'), SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+      interimPage.getRange('A2:E').setBorder(true, true, true, true, true, true, '#000000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+      interimPage.getRange('B2:B').setNumberFormat('00 00 00 00 00');
+      SpreadsheetApp.getUi().alert(formNameRange.getValue()+' a été enregistré!');
+      spreadsheet.getRange('E1:E7').clear({contentsOnly: true, skipFilteredRows: true});
+    }
+  } else {
+    SpreadsheetApp.getUi().alert('Erreur de saisie!');
+  }  
+}
+
+
+function editBtn() {
+  let spreadsheet = SpreadsheetApp.getActive();
+  let interimPage = spreadsheet.getSheetByName('Client');
+  let formEditNameRange = spreadsheet.getRangeByName('editname');
+  let formEditRoleRange = spreadsheet.getRangeByName('editrole');
+  let interimList = interimPage.getDataRange().getValues();
+  let verifinterim = interimList.filter(data => {return data[0] == formEditNameRange.getValue()})[0];
+  let foundIndex = interimList.findIndex(interim => interim[0] == formEditNameRange.getValue());
+  let rownb = ++foundIndex;
+  
+  if(formEditNameRange.getValue() != "" && formEditRoleRange.getValue() != ""){
+    if(verifinterim){
+      interimPage.getRange('C'+rownb).clear({contentsOnly: true, skipFilteredRows: true});
+      interimPage.getRange('C'+rownb).setValue(formEditRoleRange.getValue());
+      SpreadsheetApp.getUi().alert(formEditNameRange.getValue()+' a été modifié!');
+      spreadsheet.getRange('E8:E14').clear({contentsOnly: true, skipFilteredRows: true});    
+    } else {
+      SpreadsheetApp.getUi().alert(formEditNameRange.getValue()+' n\'existe pas!');
+    }
+  } else {
+    SpreadsheetApp.getUi().alert('Erreur de saisie!');
+  } 
+}
